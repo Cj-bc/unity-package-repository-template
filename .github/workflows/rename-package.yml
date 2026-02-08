@@ -1,0 +1,42 @@
+name: Rename Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      package-name:
+        description: "New package name (e.g. com.example.my-package)"
+        required: true
+        type: string
+
+jobs:
+  rename-package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate input
+        run: |
+          if [ -z "${{ inputs.package-name }}" ]; then
+            echo "::error::package-name must not be empty"
+            exit 1
+          fi
+
+      - name: Replace package name in package.json
+        run: |
+          PACKAGE_NAME="${{ inputs.package-name }}"
+          sed -i "s/\"name\": \"your-package-name\"/\"name\": \"${PACKAGE_NAME}\"/" Packages/package-name/package.json
+          sed -i "s/\"displayName\": \"Your Package Name\"/\"displayName\": \"${PACKAGE_NAME}\"/" Packages/package-name/package.json
+
+      - name: Rename package directory
+        run: |
+          mv "Packages/package-name" "Packages/${{ inputs.package-name }}"
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Rename package to ${{ inputs.package-name }}"
+          git push
